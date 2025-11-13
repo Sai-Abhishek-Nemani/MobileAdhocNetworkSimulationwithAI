@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enhanced MANET Simulation with Path Finding</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #0D1117;
+            font-family: 'Inter', system-ui;
+            color: #E6EDF3;
+            overflow: hidden;
+        }
+
+        .ctrl-panel {
+            padding: 1rem;
+            background: #161B22;
+            border-bottom: 1px solid #30363D;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .ctrl-unit, .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ctrl-unit label, .toggle-label {
+            font-size: 0.9em;
+            color: #7D8590;
+            white-space: nowrap;
+        }
+
+        .ctrl-unit input[type="number"] {
+            width: 6em;
+            padding: 0.3em;
+            background: #0D1117;
+            border: 1px solid #30363D;
+            border-radius: 4px;
+            color: #E6EDF3;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 90px;
+            height: 4px;
+            background: #30363D;
+            border-radius: 2px;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #238636;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .action-btn {
+            padding: 0.5em 1em;
+            background: #238636;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+
+        .action-btn:hover {
+            filter: brightness(1.2);
+        }
+
+        .scenario-btn {
+            background: #1F6FEB;
+        }
+
+        select {
+            background: #0D1117;
+            color: #E6EDF3;
+            border: 1px solid #30363D;
+            border-radius: 4px;
+            padding: 0.3em;
+        }
+
+        .value-display {
+            min-width: 3em;
+            text-align: center;
+            font-weight: 500;
+            color: #3FB950;
+        }
+
+        #simulationCanvas {
+            flex: 1;
+            background: #040D19;
+            margin-right: 300px;
+            position: relative;
+        }
+
+        .ai-panel {
+            position: fixed;
+            right: 0;
+            top: 100px;
+            width: 300px;
+            height: 100vh;
+            background: #161B22;
+            padding: 1rem;
+            border-left: 1px solid #30363D;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .nn-visualization {
+            background: #0D1117;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .neuron {
+            width: 12px;
+            height: 12px;
+            background: #3FB950;
+            border-radius: 50%;
+            margin: 4px;
+            display: inline-block;
+        }
+
+        .performance-chart {
+            height: 150px;
+            margin: 1rem 0;
+        }
+
+        .anomaly-alert {
+            color: #FF5555;
+            padding: 0.5rem;
+            background: rgba(255,85,85,0.1);
+            border-radius: 6px;
+            margin: 0.5rem 0;
+        }
+
+        .stats-panel {
+            background: #0D1117;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 0.9em;
+        }
+
+        .stat-label {
+            color: #7D8590;
+        }
+
+        .stat-value {
+            color: #3FB950;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .metric-card {
+            background: #0D1117;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .metric-title {
+            color: #7D8590;
+            font-size: 0.9em;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            color: #3FB950;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #30363D;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #238636;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .disclaimer {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: #7D8590;
+            font-size: 0.8em;
+            max-width: 400px;
+            background: rgba(13,17,23,0.9);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .node-info {
+            background: #0D1117;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .node-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.3rem 0;
+            font-size: 0.9em;
+        }
+
+        .signal-strength {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+            100% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ctrl-panel">
+        <div class="ctrl-unit">
+            <label>Start Node</label>
+            <input type="number" id="startNode" min="0" value="0">
+        </div>
+        <div class="ctrl-unit">
+            <label>Dest Node</label>
+            <input type="number" id="destNode" min="0" value="0">
+        </div>
+        <button class="action-btn" id="findPathBtn">Find Path</button>
+
+        <div class="ctrl-unit">
+            <label>Node Count</label>
+            <input type="number" id="nodeQuantity" min="5" max="500" value="75">
+        </div>
+
+        <div class="ctrl-unit">
+            <label>Transmission</label>
+            <input type="number" id="transmissionDistance" min="10" max="1000" value="175">
+        </div>
+
+        <div class="ctrl-unit">
+            <label>Speed</label>
+            <div class="slider-container">
+                <input type="range" class="slider" id="movementSpeed" min="0.5" max="5" step="0.2" value="1.5">
+                <span class="value-display" id="speedValue">1.5</span>
+            </div>
+        </div>
+
+        <div class="toggle-group">
+            <input type="checkbox" id="enableMotion">
+            <label class="toggle-label">Node Motion</label>
+        </div>
+
+        <div class="toggle-group">
+            <input type="checkbox" id="showLinks" checked>
+            <label class="toggle-label">Show Links</label>
+        </div>
+
+        <div class="toggle-group">
+            <input type="checkbox" id="showSignal">
+            <label class="toggle-label">Signal Strength</label>
+        </div>
+
+        <div class="ctrl-unit">
+            <label>Routing Protocol</label>
+            <select id="routingSelect">
+                <option value="AODV">AODV</option>
+                <option value="DSDV">DSDV</option>
+                <option value="OLSR">OLSR</option>
+            </select>
+        </div>
+
+        <button class="action-btn" id="restartSim">⟳ Restart</button>
+        <button class="action-btn scenario-btn" id="scenarioPartition">Partition</button>
+        <button class="action-btn scenario-btn" id="scenarioCluster">Cluster</button>
+        <button class="action-btn" id="pauseBtn">⏸ Pause</button>
+        <button class="action-btn" id="recordBtn">⏺ Record</button>
+        <button class="action-btn" id="stopBtn" disabled>⏹ Stop</button>
+        <button class="action-btn" id="playBtn" disabled>▶ Play</button>
+    </div>
+
+    <div class="ai-panel">
+        <h3>AI Insights</h3>
+        <div class="node-info">
+            <h4>Selected Node</h4>
+            <div id="nodeDetails">
+                <div class="node-info-item"><span>ID:</span> <span id="nodeId">-</span></div>
+                <div class="node-info-item"><span>Energy:</span> <span id="nodeEnergy">-</span></div>
+                <div class="node-info-item"><span>Connections:</span> <span id="nodeConnections">-</span></div>
+                <div class="node-info-item"><span>Stability:</span> <span id="nodeStability">-</span></div>
+                <div class="node-info-item"><span>Packets:</span> <span id="nodePackets">-</span></div>
+            </div>
+        </div>
+        
+        <div class="nn-visualization" id="nnVisualization"></div>
+        <div class="anomaly-alert" id="anomalyAlert" style="display: none">Network Anomaly Detected!</div>
+        
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-title">Energy Efficiency</div>
+                <div class="metric-value" id="energyEfficiency">100%</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="energyProgress" style="width: 100%"></div>
+                </div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Network Scalability</div>
+                <div class="metric-value" id="scalabilityScore">1.00</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="scalabilityProgress" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">Packets Sent:</span>
+                <span class="stat-value" id="packetCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Routing Success:</span>
+                <span class="stat-value" id="routingSuccess">100%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Avg Path Efficiency:</span>
+                <span class="stat-value" id="pathEfficiency">0.00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Energy Consumption:</span>
+                <span class="stat-value" id="energyConsumption">0 J</span>
+            </div>
+        </div>
+
+        <canvas class="performance-chart" id="performanceChart"></canvas>
+        <div class="ctrl-unit">
+            <label>AI Assistant</label>
+            <select id="aiMode">
+                <option value="off">Disabled</option>
+                <option value="predictive">Predictive Routing</option>
+                <option value="anomaly">Anomaly Detection</option>
+                <option value="optimized">Optimized Learning</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="simulationCanvas">
+        <canvas id="networkDisplay"></canvas>
+    </div>
+
+   
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script>
+    'use strict';
+
+    const SIMULATION_PARAMS = {
+        transmissionRadius: 175,
+        nodeQuantity: 75,
+        movementVelocity: 1.5,
+        nodeVisualSize: 8,
+        destinationNode: null,
+        animationHandler: null,
+        recording: false,
+        playback: false,
+        frameIndex: 0,
+        aiAgent: null,
+        anomalyDetected: false,
+        performanceMetrics: [],
+        chart: null,
+        packetCounter: 0,
+        totalHops: 0,
+        successfulDeliveries: 0,
+        activePaths: new Set(),
+        routingTable: new Map(),
+        packetInterval: 2000,
+        energyLevels: new Map(),
+        totalEnergyConsumed: 0,
+        optimalPaths: new Map(),
+        scalabilityMetrics: [],
+        basePerformance: null,
+        selectedNode: null,
+        paused: false,
+        showSignalStrength: false,
+        packetHistory: new Map(),
+        stabilityScores: new Map(),
+        pathHighlightColor: '#FFA500',
+        currentPath: null
+    };
+
+    const DOM_REFS = {
+        canvasElement: document.querySelector('#networkDisplay'),
+        ctx: document.querySelector('#networkDisplay').getContext('2d'),
+        nodeCountInput: document.getElementById('nodeQuantity'),
+        transmissionInput: document.getElementById('transmissionDistance'),
+        speedControl: document.getElementById('movementSpeed'),
+        speedDisplay: document.getElementById('speedValue'),
+        motionToggle: document.getElementById('enableMotion'),
+        linkVisibility: document.getElementById('showLinks'),
+        restartButton: document.getElementById('restartSim'),
+        recordBtn: document.getElementById('recordBtn'),
+        stopBtn: document.getElementById('stopBtn'),
+        playBtn: document.getElementById('playBtn'),
+        routingSelect: document.getElementById('routingSelect'),
+        nnVisualization: document.getElementById('nnVisualization'),
+        anomalyAlert: document.getElementById('anomalyAlert'),
+        performanceChart: document.getElementById('performanceChart'),
+        packetCount: document.getElementById('packetCount'),
+        avgHops: document.getElementById('avgHops'),
+        deliveryRate: document.getElementById('deliveryRate'),
+        energyEfficiency: document.getElementById('energyEfficiency'),
+        energyProgress: document.getElementById('energyProgress'),
+        scalabilityScore: document.getElementById('scalabilityScore'),
+        scalabilityProgress: document.getElementById('scalabilityProgress'),
+        routingSuccess: document.getElementById('routingSuccess'),
+        pathEfficiency: document.getElementById('pathEfficiency'),
+        energyConsumption: document.getElementById('energyConsumption'),
+        showSignal: document.getElementById('showSignal'),
+        nodeDetails: document.getElementById('nodeDetails'),
+        nodeId: document.getElementById('nodeId'),
+        nodeEnergy: document.getElementById('nodeEnergy'),
+        nodeConnections: document.getElementById('nodeConnections'),
+        nodeStability: document.getElementById('nodeStability'),
+        nodePackets: document.getElementById('nodePackets'),
+        scenarioPartition: document.getElementById('scenarioPartition'),
+        scenarioCluster: document.getElementById('scenarioCluster'),
+        pauseBtn: document.getElementById('pauseBtn'),
+        findPathBtn: document.getElementById('findPathBtn'),
+        startNode: document.getElementById('startNode'),
+        destNode: document.getElementById('destNode')
+    };
+
+    class NetworkNode {
+        constructor(identifier) {
+            this.id = identifier;
+            const canvas = document.getElementById('networkDisplay');
+            this.positionX = Math.random() * (canvas.width - 16) + 8;
+            this.positionY = Math.random() * (canvas.height - 16) + 8;
+            this.velocityX = 0;
+            this.velocityY = 0;
+            this.isTargetNode = false;
+            this.energy = 100;
+            this.energyConsumptionRate = 0.1;
+            this.movementEnergy = 0.01;
+            this.packetsHandled = 0;
+            this.connectionHistory = [];
+            this.initializeMovement();
+        }
+
+        initializeMovement() {
+            if (DOM_REFS.motionToggle.checked) {
+                const angle = Math.random() * Math.PI * 2;
+                this.velocityX = SIMULATION_PARAMS.movementVelocity * Math.cos(angle);
+                this.velocityY = SIMULATION_PARAMS.movementVelocity * Math.sin(angle);
+            }
+        }
+
+        updatePosition() {
+            if (SIMULATION_PARAMS.paused || !DOM_REFS.motionToggle.checked || SIMULATION_PARAMS.playback) return;
+
+            const canvas = document.getElementById('networkDisplay');
+            this.positionX += this.velocityX;
+            this.positionY += this.velocityY;
+
+            if (this.positionX <= 8 || this.positionX >= canvas.width - 8) this.velocityX *= -1;
+            if (this.positionY <= 8 || this.positionY >= canvas.height - 8) this.velocityY *= -1;
+
+            this.energy -= this.movementEnergy;
+            SIMULATION_PARAMS.totalEnergyConsumed += this.movementEnergy;
+        }
+
+        render() {
+            const isInPath = SIMULATION_PARAMS.currentPath?.includes(this);
+            DOM_REFS.ctx.beginPath();
+            DOM_REFS.ctx.arc(
+                this.positionX, 
+                this.positionY, 
+                isInPath ? 11 : (this.isTargetNode ? 11 : 8), 
+                0, 
+                Math.PI * 2
+            );
+            DOM_REFS.ctx.fillStyle = isInPath ? '#FFA500' : (this.isTargetNode ? '#FF5555' : '#44CC77');
+            DOM_REFS.ctx.fill();
+
+            DOM_REFS.ctx.fillStyle = '#FFFFFF';
+            DOM_REFS.ctx.font = '10px Arial';
+            DOM_REFS.ctx.textAlign = 'center';
+            DOM_REFS.ctx.textBaseline = 'middle';
+            DOM_REFS.ctx.fillText(this.id, this.positionX, this.positionY);
+        }
+
+        neighbors() {
+            return nodeCollection.filter(node => {
+                return node !== this && 
+                    Math.hypot(node.positionX - this.positionX, node.positionY - this.positionY) <= SIMULATION_PARAMS.transmissionRadius
+            });
+        }
+
+        sendPacket(packet) {
+            const nextHop = this.selectNextHop(packet.destination);
+            if (nextHop) {
+                this.energy -= this.energyConsumptionRate;
+                SIMULATION_PARAMS.totalEnergyConsumed += this.energyConsumptionRate;
+                packet.hops++;
+                packet.path.push(nextHop);
+                nextHop.receivePacket(packet);
+            } else {
+                packet.status = 'failed';
+            }
+        }
+
+        receivePacket(packet) {
+            this.packetsHandled++;
+            if (this === packet.destination) {
+                packet.status = 'delivered';
+                packet.endTime = Date.now();
+                packet.latency = packet.endTime - packet.startTime;
+                SIMULATION_PARAMS.successfulDeliveries++;
+                SIMULATION_PARAMS.totalHops += packet.hops;
+            } else {
+                this.sendPacket(packet);
+            }
+        }
+
+        selectNextHop(target) {
+            const neighbors = this.neighbors();
+            if (neighbors.length === 0) return null;
+            
+            switch(document.getElementById('routingSelect').value) {
+                case 'AODV':
+                    return neighbors.reduce((closest, node) => 
+                        Math.hypot(node.positionX - target.positionX, node.positionY - target.positionY) <
+                        Math.hypot(closest.positionX - target.positionX, closest.positionY - target.positionY) 
+                            ? node : closest, neighbors[0]);
+                case 'DSDV':
+                    return neighbors.find(n => n === target) || neighbors[0];
+                case 'OLSR':
+                    return neighbors[Math.floor(Math.random() * neighbors.length)];
+                default:
+                    return neighbors[0];
+            }
+        }
+
+        updateStability() {
+            const movement = Math.sqrt(this.velocityX**2 + this.velocityY**2);
+            const connectionChange = this.neighbors().length - this.connectionHistory.slice(-3).reduce((a,b) => a + b, 0)/3;
+            this.connectionHistory.push(this.neighbors().length);
+            const stability = Math.max(0, 1 - (movement * 0.2 + Math.abs(connectionChange) * 0.1));
+            SIMULATION_PARAMS.stabilityScores.set(this, stability);
+            return stability;
+        }
+    }
+
+    class Packet {
+        constructor(source, destination) {
+            this.source = source;
+            this.destination = destination;
+            this.path = [source];
+            this.hops = 0;
+            this.status = 'in-transit';
+            this.startTime = Date.now();
+            this.endTime = null;
+            this.latency = 0;
+            source.packetsHandled++;
+        }
+    }
+
+    class NeuralNetwork {
+        constructor() {
+            this.model = {
+                layers: [4, 6, 4],
+                weights: [],
+                predict: (inputs) => this.mockPredict(inputs)
+            };
+            this.mockInitialize();
+        }
+
+        mockInitialize() {
+            this.model.weights = [
+                Array(24).fill().map(() => Math.random() * 2 - 1),
+                Array(24).fill().map(() => Math.random() * 2 - 1)
+            ];
+        }
+
+        mockPredict(inputs) {
+            return [
+                inputs[0] * 0.8 + inputs[1] * 0.2,
+                inputs[2] * 0.6 - inputs[3] * 0.4,
+                Math.random(),
+                inputs.reduce((a, b) => a + b) / 4
+            ];
+        }
+    }
+
+    class AIAgent {
+        constructor() {
+            this.routingModel = new NeuralNetwork();
+            this.anomalyDetector = new AnomalyDetector();
+            this.performanceData = [];
+        }
+
+        optimizeRoute(nodes) {
+            const density = nodes.length / (DOM_REFS.canvasElement.width * DOM_REFS.canvasElement.height);
+            const inputs = [
+                density,
+                SIMULATION_PARAMS.movementVelocity,
+                SIMULATION_PARAMS.transmissionRadius,
+                this.calculateConnectivity(nodes)
+            ];
+            return this.routingModel.model.predict(inputs);
+        }
+
+        calculateConnectivity(nodes) {
+            let connections = 0;
+            nodes.forEach(node => {
+                nodes.forEach(other => {
+                    if (node !== other && this.getDistance(node, other) < SIMULATION_PARAMS.transmissionRadius) connections++;
+                });
+            });
+            return connections / (nodes.length * (nodes.length - 1));
+        }
+
+        getDistance(a, b) {
+            return Math.hypot(a.positionX - b.positionX, a.positionY - b.positionY);
+        }
+    }
+
+    class AnomalyDetector {
+        constructor() {
+            this.model = tf.sequential({
+                layers: [
+                    tf.layers.dense({units: 4, activation: 'relu', inputShape: [4]}),
+                    tf.layers.dense({units: 2, activation: 'relu'}),
+                    tf.layers.dense({units: 4, activation: 'sigmoid'})
+                ]
+            });
+            this.threshold = 0.7;
+        }
+
+        async train(nodes) {
+            const data = nodes.map(node => [
+                node.positionX / DOM_REFS.canvasElement.width,
+                node.positionY / DOM_REFS.canvasElement.height,
+                node.velocityX,
+                node.velocityY
+            ]);
+            const tensorData = tf.tensor2d(data);
+            await this.model.compile({optimizer: 'adam', loss: 'meanSquaredError'});
+            await this.model.fit(tensorData, tensorData, {epochs: 10});
+            tensorData.dispose();
+        }
+
+        detect(nodes) {
+            const data = nodes.map(node => [
+                node.positionX / DOM_REFS.canvasElement.width,
+                node.positionY / DOM_REFS.canvasElement.height,
+                node.velocityX,
+                node.velocityY
+            ]);
+            const pred = this.model.predict(tf.tensor2d(data));
+            const error = tf.mean(tf.square(tf.sub(pred, tf.tensor2d(data))));
+            const errorValue = error.dataSync()[0];
+            tf.dispose(pred);
+            tf.dispose(error);
+            return errorValue > this.threshold;
+        }
+    }
+
+    let nodeCollection = [];
+    let recordingFrames = [];
+
+    function configureCanvas() {
+        const container = document.getElementById('simulationCanvas');
+        const canvas = document.getElementById('networkDisplay');
+        const width = container.clientWidth - 300;
+        const height = container.clientHeight;
+        
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+    }
+
+    function drawNodeLinks() {
+        DOM_REFS.ctx.strokeStyle = 'rgba(68, 204, 119, 0.2)';
+        DOM_REFS.ctx.lineWidth = 1;
+        for (let i = 0; i < nodeCollection.length; i++) {
+            const nodeA = nodeCollection[i];
+            for (let j = i + 1; j < nodeCollection.length; j++) {
+                const nodeB = nodeCollection[j];
+                const dx = nodeA.positionX - nodeB.positionX;
+                const dy = nodeA.positionY - nodeB.positionY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance <= SIMULATION_PARAMS.transmissionRadius) {
+                    DOM_REFS.ctx.beginPath();
+                    DOM_REFS.ctx.moveTo(nodeA.positionX, nodeA.positionY);
+                    DOM_REFS.ctx.lineTo(nodeB.positionX, nodeB.positionY);
+                    DOM_REFS.ctx.stroke();
+                }
+            }
+        }
+    }
+
+    function drawSignalStrength() {
+        if (!DOM_REFS.showSignal.checked) return;
+        
+        nodeCollection.forEach(node => {
+            const gradient = DOM_REFS.ctx.createRadialGradient(
+                node.positionX, node.positionY, 0,
+                node.positionX, node.positionY, SIMULATION_PARAMS.transmissionRadius
+            );
+            gradient.addColorStop(0, 'rgba(68, 204, 119, 0.15)');
+            gradient.addColorStop(1, 'rgba(68, 204, 119, 0)');
+            
+            DOM_REFS.ctx.fillStyle = gradient;
+            DOM_REFS.ctx.beginPath();
+            DOM_REFS.ctx.arc(node.positionX, node.positionY, SIMULATION_PARAMS.transmissionRadius, 0, Math.PI * 2);
+            DOM_REFS.ctx.fill();
+        });
+    }
+
+    function createNetworkPartition() {
+        nodeCollection.forEach((node, index) => {
+            node.positionX = index % 2 === 0 ? 
+                Math.random() * DOM_REFS.canvasElement.width/2 :
+                DOM_REFS.canvasElement.width/2 + Math.random() * DOM_REFS.canvasElement.width/2;
+        });
+    }
+
+    function createNodeCluster() {
+        const centerX = DOM_REFS.canvasElement.width/2;
+        const centerY = DOM_REFS.canvasElement.height/2;
+        nodeCollection.forEach(node => {
+            node.positionX = centerX + (Math.random() - 0.5) * 100;
+            node.positionY = centerY + (Math.random() - 0.5) * 100;
+        });
+    }
+
+    function updateNodeInfo() {
+        if (!SIMULATION_PARAMS.selectedNode) {
+            DOM_REFS.nodeId.textContent = '-';
+            DOM_REFS.nodeEnergy.textContent = '-';
+            DOM_REFS.nodeConnections.textContent = '-';
+            DOM_REFS.nodeStability.textContent = '-';
+            DOM_REFS.nodePackets.textContent = '-';
+            return;
+        }
+        
+        DOM_REFS.nodeId.textContent = SIMULATION_PARAMS.selectedNode.id;
+        DOM_REFS.nodeEnergy.textContent = `${SIMULATION_PARAMS.selectedNode.energy.toFixed(1)}%`;
+        DOM_REFS.nodeConnections.textContent = SIMULATION_PARAMS.selectedNode.neighbors().length;
+        DOM_REFS.nodeStability.textContent = (SIMULATION_PARAMS.stabilityScores.get(SIMULATION_PARAMS.selectedNode) * 100).toFixed(1) + '%';
+        DOM_REFS.nodePackets.textContent = SIMULATION_PARAMS.selectedNode.packetsHandled;
+    }
+
+    async function initializeSystem() {
+        cancelAnimationFrame(SIMULATION_PARAMS.animationHandler);
+        SIMULATION_PARAMS.playback = false;
+        nodeCollection = [];
+
+        SIMULATION_PARAMS.nodeQuantity = Math.min(DOM_REFS.nodeCountInput.value, 500);
+        SIMULATION_PARAMS.transmissionRadius = DOM_REFS.transmissionInput.value;
+        SIMULATION_PARAMS.movementVelocity = parseFloat(DOM_REFS.speedControl.value);
+        recordingFrames = [];
+        SIMULATION_PARAMS.aiAgent = new AIAgent();
+
+        for (let i = 0; i < SIMULATION_PARAMS.nodeQuantity; i++) {
+            nodeCollection.push(new NetworkNode(i));
+        }
+
+        await SIMULATION_PARAMS.aiAgent.anomalyDetector.train(nodeCollection);
+        SIMULATION_PARAMS.destinationNode = nodeCollection[0];
+        SIMULATION_PARAMS.destinationNode.isTargetNode = true;
+
+        SIMULATION_PARAMS.basePerformance = {
+            nodes: nodeCollection.length,
+            deliveryRate: 0,
+            latency: 0
+        };
+
+        updateNNVisualization();
+        startPerformanceMonitoring();
+        startPacketGenerator();
+        beginAnimationCycle();
+    }
+
+    function processFrame() {
+        if (SIMULATION_PARAMS.paused) {
+            SIMULATION_PARAMS.animationHandler = requestAnimationFrame(processFrame);
+            return;
+        }
+        
+        DOM_REFS.ctx.clearRect(0, 0, DOM_REFS.canvasElement.width, DOM_REFS.canvasElement.height);
+
+        if (SIMULATION_PARAMS.playback && recordingFrames.length > 0) {
+            const frame = recordingFrames[SIMULATION_PARAMS.frameIndex];
+            if (frame) {
+                frame.forEach((pos, i) => {
+                    nodeCollection[i].positionX = pos.x;
+                    nodeCollection[i].positionY = pos.y;
+                });
+                SIMULATION_PARAMS.frameIndex = (SIMULATION_PARAMS.frameIndex + 1) % recordingFrames.length;
+            }
+        }
+
+        nodeCollection.forEach(node => {
+            node.updatePosition();
+            node.render();
+        });
+
+        if (!SIMULATION_PARAMS.playback && DOM_REFS.linkVisibility.checked) drawNodeLinks();
+        if (SIMULATION_PARAMS.recording) {
+            recordingFrames.push(nodeCollection.map(node => ({ x: node.positionX, y: node.positionY })));
+        }
+
+        // Draw current path connections
+        if (SIMULATION_PARAMS.currentPath) {
+            DOM_REFS.ctx.beginPath();
+            DOM_REFS.ctx.moveTo(
+                SIMULATION_PARAMS.currentPath[0].positionX,
+                SIMULATION_PARAMS.currentPath[0].positionY
+            );
+            for (const node of SIMULATION_PARAMS.currentPath) {
+                DOM_REFS.ctx.lineTo(node.positionX, node.positionY);
+            }
+            DOM_REFS.ctx.strokeStyle = '#FFA500';
+            DOM_REFS.ctx.lineWidth = 2;
+            DOM_REFS.ctx.stroke();
+        }
+
+        if (document.getElementById('aiMode').value === 'optimized') {
+            visualizeOptimalPaths();
+        }
+
+        drawSignalStrength();
+        nodeCollection.forEach(node => node.updateStability());
+        updateNodeInfo();
+
+        SIMULATION_PARAMS.animationHandler = requestAnimationFrame(processFrame);
+    }
+
+    function beginAnimationCycle() {
+        cancelAnimationFrame(SIMULATION_PARAMS.animationHandler);
+        processFrame();
+    }
+
+    function updateNNVisualization() {
+        DOM_REFS.nnVisualization.innerHTML = '';
+        SIMULATION_PARAMS.aiAgent.routingModel.model.layers.forEach(layer => {
+            const layerDiv = document.createElement('div');
+            layerDiv.className = 'nn-layer';
+            for (let i = 0; i < layer; i++) {
+                layerDiv.innerHTML += '<div class="neuron"></div>';
+            }
+            DOM_REFS.nnVisualization.appendChild(layerDiv);
+        });
+    }
+
+    function startPerformanceMonitoring() {
+        setInterval(() => {
+            const metrics = SIMULATION_PARAMS.aiAgent.optimizeRoute(nodeCollection);
+            SIMULATION_PARAMS.performanceMetrics.push(metrics);
+            
+            if (SIMULATION_PARAMS.performanceMetrics.length > 50) {
+                SIMULATION_PARAMS.performanceMetrics.shift();
+            }
+
+            if (SIMULATION_PARAMS.aiAgent.anomalyDetector.detect(nodeCollection)) {
+                DOM_REFS.anomalyAlert.style.display = 'block';
+            } else {
+                DOM_REFS.anomalyAlert.style.display = 'none';
+            }
+
+            updatePerformanceChart();
+        }, 2000);
+    }
+
+    function calculateEnergyMetrics() {
+        let totalEnergy = 0;
+        let activeNodes = 0;
+        nodeCollection.forEach(node => {
+            totalEnergy += node.energy;
+            if(node.energy > 0) activeNodes++;
+        });
+        
+        const efficiency = (totalEnergy / (nodeCollection.length * 100)) * 100;
+        DOM_REFS.energyEfficiency.textContent = `${efficiency.toFixed(1)}%`;
+        DOM_REFS.energyProgress.style.width = `${efficiency}%`;
+        DOM_REFS.energyConsumption.textContent = 
+            `${SIMULATION_PARAMS.totalEnergyConsumed.toFixed(2)} J`;
+        
+        return efficiency;
+    }
+
+    function calculateScalability() {
+        const nodeCount = nodeCollection.length;
+        const successRate = SIMULATION_PARAMS.successfulDeliveries / SIMULATION_PARAMS.packetCounter || 0;
+        const latency = SIMULATION_PARAMS.totalHops / SIMULATION_PARAMS.successfulDeliveries || 0;
+        
+        const nodeScore = 1 - Math.min(nodeCount/500, 1);
+        const successScore = successRate;
+        const latencyScore = 1 - Math.min(latency/20, 1);
+        
+        const scalability = (nodeScore * 0.4 + successScore * 0.4 + latencyScore * 0.2);
+        DOM_REFS.scalabilityScore.textContent = scalability.toFixed(2);
+        DOM_REFS.scalabilityProgress.style.width = `${scalability * 100}%`;
+        
+        return scalability;
+    }
+
+    function calculateRoutingEfficiency(packet) {
+        if(packet.status === 'delivered') {
+            const actualPath = packet.path.length;
+            const optimalPath = Math.ceil(
+                Math.hypot(
+                    packet.source.positionX - packet.destination.positionX,
+                    packet.source.positionY - packet.destination.positionY
+                ) / SIMULATION_PARAMS.transmissionRadius
+            );
+            
+            const efficiency = optimalPath / actualPath;
+            SIMULATION_PARAMS.optimalPaths.set(packet, efficiency);
+            return efficiency;
+        }
+        return 0;
+    }
+
+    function updatePerformanceChart() {
+        if (SIMULATION_PARAMS.chart) {
+            SIMULATION_PARAMS.chart.destroy();
+        }
+
+        const ctx = DOM_REFS.performanceChart.getContext('2d');
+        SIMULATION_PARAMS.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: SIMULATION_PARAMS.performanceMetrics.map((_, i) => i),
+                datasets: [{
+                    label: 'Network Performance',
+                    data: SIMULATION_PARAMS.performanceMetrics.map(m => m[3]),
+                    borderColor: '#3FB950',
+                    tension: 0.3,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { display: false }
+                }
+            }
+        });
+    }
+
+    function startPacketGenerator() {
+        setInterval(() => {
+            if (!SIMULATION_PARAMS.playback) {
+                const source = nodeCollection[Math.floor(Math.random() * nodeCollection.length)];
+                const packet = new Packet(source, SIMULATION_PARAMS.destinationNode);
+                source.sendPacket(packet);
+                SIMULATION_PARAMS.packetCounter++;
+                visualizePath(packet);
+                calculateRoutingEfficiency(packet);
+                updateStats();
+            }
+        }, SIMULATION_PARAMS.packetInterval);
+    }
+
+    function visualizePath(packet) {
+        const pathId = `path-${Date.now()}`;
+        SIMULATION_PARAMS.activePaths.add(pathId);
+        
+        const drawPath = () => {
+            if (packet.status === 'in-transit') {
+                DOM_REFS.ctx.beginPath();
+                DOM_REFS.ctx.moveTo(packet.path[0].positionX, packet.path[0].positionY);
+                packet.path.forEach(node => {
+                    DOM_REFS.ctx.lineTo(node.positionX, node.positionY);
+                });
+                DOM_REFS.ctx.strokeStyle = SIMULATION_PARAMS.pathHighlightColor;
+                DOM_REFS.ctx.lineWidth = 2;
+                DOM_REFS.ctx.stroke();
+                requestAnimationFrame(drawPath);
+            } else {
+                SIMULATION_PARAMS.activePaths.delete(pathId);
+            }
+        };
+        drawPath();
+    }
+
+    function updateStats() {
+        DOM_REFS.packetCount.textContent = SIMULATION_PARAMS.packetCounter;
+        const avg = SIMULATION_PARAMS.totalHops / SIMULATION_PARAMS.successfulDeliveries || 0;
+        const rate = (SIMULATION_PARAMS.successfulDeliveries / SIMULATION_PARAMS.packetCounter * 100 || 100).toFixed(1);
+        const successRate = (SIMULATION_PARAMS.successfulDeliveries / SIMULATION_PARAMS.packetCounter * 100 || 100).toFixed(1);
+        
+        DOM_REFS.routingSuccess.textContent = `${successRate}%`;
+        
+        const efficiencies = [...SIMULATION_PARAMS.optimalPaths.values()];
+        const avgEfficiency = efficiencies.length > 0 ? 
+            efficiencies.reduce((a, b) => a + b) / efficiencies.length : 0;
+        DOM_REFS.pathEfficiency.textContent = avgEfficiency.toFixed(2);
+        
+        calculateEnergyMetrics();
+        calculateScalability();
+    }
+
+    function visualizeOptimalPaths() {
+        const predictions = SIMULATION_PARAMS.aiAgent.optimizeRoute(nodeCollection);
+        nodeCollection.forEach((node, i) => {
+            const stability = predictions[0];
+            DOM_REFS.ctx.fillStyle = `rgba(63, 185, 80, ${stability})`;
+            DOM_REFS.ctx.beginPath();
+            DOM_REFS.ctx.arc(node.positionX, node.positionY, 15, 0, Math.PI * 2);
+            DOM_REFS.ctx.fill();
+        });
+    }
+
+    function findPath(sourceNode, destNode) {
+        let current = sourceNode;
+        const path = [current];
+        const visited = new Set();
+        visited.add(current);
+
+        while (current !== destNode) {
+            const nextHop = current.selectNextHop(destNode);
+            if (!nextHop || visited.has(nextHop)) return null;
+            visited.add(nextHop);
+            path.push(nextHop);
+            current = nextHop;
+        }
+        return path;
+    }
+
+    function findAndDisplayPath() {
+        const startNodeId = parseInt(DOM_REFS.startNode.value);
+        const destNodeId = parseInt(DOM_REFS.destNode.value);
+        
+        if (isNaN(startNodeId) || isNaN(destNodeId) || 
+            startNodeId < 0 || startNodeId >= nodeCollection.length ||
+            destNodeId < 0 || destNodeId >= nodeCollection.length) {
+            alert('Invalid node numbers (0-' + (nodeCollection.length-1) + ')');
+            return;
+        }
+
+        // Clear previous markers
+        if (SIMULATION_PARAMS.destinationNode) {
+            SIMULATION_PARAMS.destinationNode.isTargetNode = false;
+        }
+        SIMULATION_PARAMS.currentPath = null;
+
+        const sourceNode = nodeCollection[startNodeId];
+        const destNode = nodeCollection[destNodeId];
+        destNode.isTargetNode = true;
+        SIMULATION_PARAMS.destinationNode = destNode;
+
+        const path = findPath(sourceNode, destNode);
+        if (path) {
+            SIMULATION_PARAMS.currentPath = path;
+        } else {
+            alert('No path found between selected nodes');
+        }
+    }
+
+    // Event Listeners
+    DOM_REFS.restartButton.addEventListener('click', initializeSystem);
+    DOM_REFS.speedControl.addEventListener('input', e => {
+        SIMULATION_PARAMS.movementVelocity = parseFloat(e.target.value);
+        DOM_REFS.speedDisplay.textContent = e.target.value;
+    });
+    window.addEventListener('resize', configureCanvas);
+    DOM_REFS.recordBtn.addEventListener('click', () => {
+        SIMULATION_PARAMS.recording = true;
+        DOM_REFS.recordBtn.disabled = true;
+        DOM_REFS.stopBtn.disabled = false;
+        DOM_REFS.playBtn.disabled = true;
+        recordingFrames = [];
+    });
+    DOM_REFS.stopBtn.addEventListener('click', () => {
+        SIMULATION_PARAMS.recording = false;
+        DOM_REFS.recordBtn.disabled = false;
+        DOM_REFS.stopBtn.disabled = true;
+        DOM_REFS.playBtn.disabled = false;
+    });
+    DOM_REFS.playBtn.addEventListener('click', () => {
+        if (recordingFrames.length === 0) return;
+        SIMULATION_PARAMS.playback = true;
+        SIMULATION_PARAMS.frameIndex = 0;
+        beginAnimationCycle();
+    });
+    DOM_REFS.scenarioPartition.addEventListener('click', createNetworkPartition);
+    DOM_REFS.scenarioCluster.addEventListener('click', createNodeCluster);
+    DOM_REFS.pauseBtn.addEventListener('click', () => {
+        SIMULATION_PARAMS.paused = !SIMULATION_PARAMS.paused;
+        DOM_REFS.pauseBtn.textContent = SIMULATION_PARAMS.paused ? '▶ Resume' : '⏸ Pause';
+    });
+    DOM_REFS.canvasElement.addEventListener('click', (e) => {
+        const rect = DOM_REFS.canvasElement.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        SIMULATION_PARAMS.selectedNode = nodeCollection.find(node => 
+            Math.hypot(node.positionX - x, node.positionY - y) < 15
+        );
+        updateNodeInfo();
+    });
+    DOM_REFS.findPathBtn.addEventListener('click', findAndDisplayPath);
+
+    // Initial setup
+    configureCanvas();
+    initializeSystem();
+    </script>
+</body>
+</html>
